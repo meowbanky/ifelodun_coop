@@ -38,6 +38,9 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.BACKEND_DIR }}
           local-dir: ./server/
+          protocol: sftp
+          port: 22
+          timeout: 600000
           exclude: |
             **/.git*
             **/.git*/**
@@ -63,6 +66,8 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.BACKEND_DIR }}
           local-dir: ./server/
+          protocol: sftp
+          port: 22
           include: |
             package.json
             package-lock.json
@@ -109,6 +114,10 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FRONTEND_DIR }}
           local-dir: ./frontend/dist/
+          protocol: sftp
+          port: 22
+          dangerous-clean-slate: true
+          timeout: 600000
           exclude: |
             **/.git*
             **/.git*/**
