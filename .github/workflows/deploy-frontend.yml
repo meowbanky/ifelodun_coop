@@ -41,6 +41,9 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FRONTEND_DIR }}
           local-dir: ./frontend/dist/
+          protocol: ftps
+          dangerous-clean-slate: true
+          timeout: 600000
           exclude: |
             **/.git*
             **/.git*/**
