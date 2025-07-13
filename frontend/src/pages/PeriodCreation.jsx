@@ -29,7 +29,7 @@ const PeriodCreation = () => {
         message: err.response?.data?.message || "Failed to load periods.",
         type: "error",
       });
-      console.error("Fetch period error:", err);
+      console.error("Fetch periods error:", err);
     }
   };
 
