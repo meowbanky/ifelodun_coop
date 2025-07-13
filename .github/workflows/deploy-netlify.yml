@@ -1,4 +1,4 @@
-name: Deploy Frontend
+name: Deploy to Netlify
 
 on:
   push:
@@ -12,9 +12,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -34,19 +33,17 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
-      - name: Deploy to shared hosting
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ${{ secrets.FRONTEND_DIR }}
-          local-dir: ./frontend/dist/
-          protocol: ftp
-          port: 21
-          timeout: 600000
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.DS_Store
-            **/Thumbs.db
+          publish-dir: "./frontend/dist"
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1

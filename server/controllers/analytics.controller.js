@@ -287,7 +287,7 @@ class AnalyticsController {
     try {
       const { months = 6 } = req.query;
 
-      // Get monthly financial trends - handle if table doesn't exist
+      // Get monthly financi al trends - handle if table doesn't exist
       let trends = [];
       try {
         const [trendsData] = await connection.execute(
