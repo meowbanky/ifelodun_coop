@@ -40,8 +40,8 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.BACKEND_DIR }}
           local-dir: ./server/
-          protocol: sftp
-          port: 22
+          protocol: ftps
+          port: 21
           timeout: 600000
           exclude: |
             **/.git*
@@ -68,8 +68,8 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.BACKEND_DIR }}
           local-dir: ./server/
-          protocol: sftp
-          port: 22
+          protocol: ftps
+          port: 21
           include: |
             package.json
             package-lock.json

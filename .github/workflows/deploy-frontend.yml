@@ -42,8 +42,8 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FRONTEND_DIR }}
           local-dir: ./frontend/dist/
-          protocol: sftp
-          port: 22
+          protocol: ftps
+          port: 21
           dangerous-clean-slate: true
           timeout: 600000
           exclude: |
