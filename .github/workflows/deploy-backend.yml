@@ -1,0 +1,78 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "server/**"
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Run tests (if you have them)
+        working-directory: ./server
+        run: npm test --if-present
+
+      - name: Deploy to shared hosting
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.BACKEND_DIR }}
+          local-dir: ./server/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/uploads/**
+            **/.env
+            **/logs/**
+            **/coverage/**
+            **/.nyc_output/**
+            **/.DS_Store
+            **/Thumbs.db
+            **/package-lock.json
+            **/README.md
+            **/.gitignore
+            **/.eslintrc*
+            **/.prettierrc*
+
+      - name: Deploy package.json for dependencies
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.BACKEND_DIR }}
+          local-dir: ./server/
+          include: |
+            package.json
+            package-lock.json
+
+      - name: Notify deployment complete
+        run: |
+          echo "Backend deployment completed!"
+          echo "Please manually restart your Node.js application in cPanel if needed."
+          echo "You can do this by:"
+          echo "1. Go to cPanel → Node.js Selector"
+          echo "2. Find your application and click 'Restart'"
+          echo "3. Or run 'npm install' in the terminal if available"

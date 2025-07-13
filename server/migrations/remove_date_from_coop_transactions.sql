@@ -1,0 +1,1 @@
+ALTER TABLE coop_transactions DROP COLUMN date; 
