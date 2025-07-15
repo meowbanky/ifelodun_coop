@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import Dialog from "../components/Dialog";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const CategoryManagement = () => {
-  const { user } = useAuth();
+  useAuth();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dialog, setDialog] = useState(null);
@@ -70,7 +70,9 @@ const CategoryManagement = () => {
     setLoading(true);
     setDialog(null);
     try {
-      await api.put(`/categories/${editingCategory.id}`, form, { headers: authHeader });
+      await api.put(`/categories/${editingCategory.id}`, form, {
+        headers: authHeader,
+      });
       setDialog({ message: "Category updated successfully!", type: "success" });
       setForm({ name: "", type: "income" });
       setShowEditModal(false);
@@ -87,7 +89,8 @@ const CategoryManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) return;
+    if (!window.confirm("Are you sure you want to delete this category?"))
+      return;
     setLoading(true);
     setDialog(null);
     try {
@@ -118,13 +121,17 @@ const CategoryManagement = () => {
   };
 
   const getTypeColor = (type) => {
-    return type === "income" ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100";
+    return type === "income"
+      ? "text-green-600 bg-green-100"
+      : "text-red-600 bg-red-100";
   };
 
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Category Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Category Management
+        </h2>
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -173,7 +180,11 @@ const CategoryManagement = () => {
                       {category.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(category.type)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(
+                          category.type
+                        )}`}
+                      >
                         {category.type}
                       </span>
                     </td>
@@ -322,4 +333,4 @@ const CategoryManagement = () => {
   );
 };
 
-export default CategoryManagement; 
+export default CategoryManagement;
