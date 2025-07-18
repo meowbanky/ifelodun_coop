@@ -73,6 +73,26 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/categories", categoryRoutes);
 console.log("Loan type routes mounted at /api/loan-types");
 
+// Route imports
+const authRoutes = require("./routes_mobile/auth.routes");
+const memberRoutes = require("./routes_mobile/member");
+const periodRoutes = require("./routes_mobile/period");
+const profileRoutes = require("./routes_mobile/profile.routes");
+const forgotPasswordRoutes = require("./routes_mobile/forgot_password");
+const notificationRoutes = require("./routes_mobile/notifications");
+const changePasswordRoutes = require("./routes_mobile/change_password");
+const deviceRoutes = require("./routes_mobile/device");
+
+// Mount routes
+app.use("/mobile_app", authRoutes);
+app.use("/mobile_app/member", memberRoutes);
+app.use("/mobile_app/period", periodRoutes);
+app.use("/mobile_app/profile", profileRoutes);
+app.use("/mobile_app", forgotPasswordRoutes);
+app.use("/mobile_app/notifications", notificationRoutes);
+app.use("/mobile_app/change-password", changePasswordRoutes);
+app.use("/mobile_app/device", deviceRoutes);
+
 // Placeholder for notificationTasks (replace with actual import)
 // const notificationTasks = require("./tasks/notificationTasks"); // Adjust path as needed
 
