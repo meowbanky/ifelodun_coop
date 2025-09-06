@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "multer": "^2.0.2",
+    "openai": "^5.11.0",
+    "pdf-parse": "^1.1.1",
+    "string-similarity": "^4.0.4",
+    "xlsx": "^0.18.5"
+  }
+}

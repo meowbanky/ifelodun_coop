@@ -30,6 +30,11 @@ const navigation = [
     href: "/process/transactions",
     icon: BanknotesIcon,
   },
+  {
+    name: "Bank Statement Processing",
+    href: "/bank-statements",
+    icon: BanknotesIcon,
+  },
   { name: "Analytics", href: "/analytics", icon: PresentationChartLineIcon },
   {
     name: "Coop Transactions",
@@ -75,6 +80,11 @@ const navigation = [
     name: "Withdrawals",
     href: "/withdrawals",
     icon: BanknotesIcon,
+  },
+  {
+    name: "Member Financial Management",
+    href: "/member-financial-management",
+    icon: UsersIcon,
   },
   {
     name: "Settings",

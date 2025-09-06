@@ -9,6 +9,8 @@ router.use(authMiddleware);
 
 // Specific routes first
 router.get("/list", memberController.listMembers);
+router.get("/search", memberController.searchMembers);
+router.get("/with-stop-interest", memberController.listMembersWithStopInterest);
 router.get("/bank-sortcodes", (req, res, next) => {
   console.log("Bank sortcodes route hit at /api/members/bank-sortcodes");
   memberController.listBankSortCodes(req, res, next);
@@ -43,5 +45,13 @@ router.post(
   "/:memberId/withdraw",
   authMiddleware,
   memberController.withdrawFromBalance
+);
+router.get(
+  "/:memberId/financial-data/:periodId",
+  memberController.getMemberFinancialData
+);
+router.put(
+  "/:memberId/financial-data/:periodId",
+  memberController.updateMemberFinancialData
 );
 module.exports = router;

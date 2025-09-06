@@ -38,6 +38,8 @@ import Withdrawals from "./pages/Withdrawals";
 import Analytics from "./pages/Analytics";
 import CoopTransactions from "./pages/CoopTransactions";
 import CategoryManagement from "./pages/CategoryManagement";
+import BankStatementProcessing from "./pages/BankStatementProcessing";
+import MemberFinancialManagement from "./pages/MemberFinancialManagement";
 
 // --- Valid Report Types (mirrors ReportsPage.jsx) ---
 const validReportTypes = [
@@ -145,6 +147,10 @@ function App() {
               element={<ProcessMonthlyTransaction />}
             />
             <Route
+              path="/bank-statements"
+              element={<BankStatementProcessing />}
+            />
+            <Route
               path="/reports/:reportType"
               element={<ReportsPageWrapper />}
             />
@@ -154,6 +160,10 @@ function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/coop-transactions" element={<CoopTransactions />} />
             <Route path="/categories" element={<CategoryManagement />} />
+            <Route
+              path="/member-financial-management"
+              element={<MemberFinancialManagement />}
+            />
           </Route>
           {/* Catch-all route */}
           <Route path="*" element={<div>404 - Page Not Found</div>} />

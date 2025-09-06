@@ -1,0 +1,7 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/ifelodu3/mobile_app"
+PassengerBaseURI "/mobile_app"
+PassengerNodejs "/home/ifelodu3/nodevenv/mobile_app/22/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END

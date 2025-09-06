@@ -19,15 +19,38 @@ export function AuthProvider({ children }) {
 
     if (token) {
       try {
+        console.log(
+          "checkAuth: API baseURL:",
+          import.meta.env.VITE_API_BASE_URL
+        );
+        console.log("checkAuth: Making API call to /auth/profile");
+        console.log(
+          "checkAuth: Full URL will be:",
+          import.meta.env.VITE_API_BASE_URL + "/auth/profile"
+        );
+
         const response = await api.get("/auth/profile", {
           headers: {
             Authorization: `Bearer ${token}`, // Ensure token is sent
           },
         });
+        console.log("checkAuth: Full response:", response);
+        console.log("checkAuth: Response data:", response.data);
+        console.log("checkAuth: Response status:", response.status);
+        console.log("checkAuth: Response headers:", response.headers);
         console.log("checkAuth: User profile:", response.data.data);
-        setUser(response.data.data);
+
+        if (response.data && response.data.data) {
+          setUser(response.data.data);
+          console.log("checkAuth: User set successfully:", response.data.data);
+        } else {
+          console.error("checkAuth: Invalid response structure:", response);
+          localStorage.removeItem("token");
+          setUser(null);
+        }
       } catch (error) {
         console.error("checkAuth: Failed to fetch profile:", error);
+        console.error("checkAuth: Error response:", error.response);
         localStorage.removeItem("token");
         setUser(null);
       }

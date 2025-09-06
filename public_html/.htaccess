@@ -1,0 +1,24 @@
+# Passenger Configuration for Node.js API
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/ifelodu3/api"
+PassengerBaseURI "/api"
+PassengerNodejs "/home/ifelodu3/nodevenv/api/24/bin/node"
+PassengerAppType node
+PassengerStartupFile index.js
+PassengerAppEnv production
+PassengerFriendlyErrorPages on
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
+RewriteEngine On
+RewriteBase /
+
+# Frontend routing - serve React app for all non-API requests
+RewriteCond %{REQUEST_URI} !^/api [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+# php handler
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php81 .php .php8 .phtml
+</IfModule>

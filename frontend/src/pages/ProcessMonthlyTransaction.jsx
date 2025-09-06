@@ -8,11 +8,13 @@ const ProcessMonthlyTransaction = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("");
   const [contributionSum, setContributionSum] = useState(null);
   const [processingResults, setProcessingResults] = useState(null);
+  const [membersWithStopInterest, setMembersWithStopInterest] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dialog, setDialog] = useState(null); // Removed type annotation
 
   useEffect(() => {
     fetchPeriods();
+    fetchMembersWithStopInterest();
   }, []);
 
   useEffect(() => {
@@ -37,6 +39,17 @@ const ProcessMonthlyTransaction = () => {
         type: "error",
       });
       console.error(err);
+    }
+  };
+
+  const fetchMembersWithStopInterest = async () => {
+    try {
+      const response = await api.get("/members/with-stop-interest", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setMembersWithStopInterest(response.data.data || []);
+    } catch (err) {
+      console.error("Failed to load members with stop interest:", err);
     }
   };
 
@@ -148,6 +161,83 @@ const ProcessMonthlyTransaction = () => {
                   currency: "NGN",
                 })}
               </span>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Members with Stop Interest */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-md p-5 mb-6"
+        >
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Members with Stop Interest Enabled
+          </h2>
+          {membersWithStopInterest.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Member ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Savings
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Loan Balance
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {membersWithStopInterest.map((member) => (
+                    <tr key={member.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {member.member_id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {member.first_name} {member.last_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {member.phone_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ₦{member.total_savings?.toLocaleString() || "0.00"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ₦{member.loan_balance?.toLocaleString() || "0.00"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No members found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No members currently have stop interest enabled.
+              </p>
             </div>
           )}
         </motion.div>

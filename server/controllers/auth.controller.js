@@ -47,29 +47,68 @@ class AuthController {
   }
 
   async login(req, res) {
-    const connection = await pool.getConnection();
+    let connection;
     try {
+      console.log("🔐 Login attempt for username:", req.body.username);
+      console.log("📝 Request body:", req.body);
+
+      // Validate required environment variables
+      if (!process.env.JWT_SECRET) {
+        console.error("❌ JWT_SECRET environment variable is not set");
+        return ResponseHandler.error(res, "Server configuration error", 500);
+      }
+
+      // Validate request body
       const { username, password } = req.body;
 
+      if (!username || !password) {
+        console.error("❌ Missing username or password in request");
+        return ResponseHandler.error(
+          res,
+          "Username and password are required",
+          400
+        );
+      }
+
+      console.log("🔍 Attempting database connection...");
+
+      // Get database connection
+      connection = await pool.getConnection();
+      console.log("✅ Database connection established");
+
       // Get user
+      console.log("🔍 Querying user with username:", username);
       const [users] = await connection.execute(
         "SELECT * FROM users WHERE username = ?",
         [username]
       );
 
+      console.log("👥 Users found:", users.length);
+
       if (users.length === 0) {
+        console.log("❌ No user found with username:", username);
         return ResponseHandler.error(res, "Invalid credentials", 401);
       }
 
       const user = users[0];
+      console.log("✅ User found:", {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      });
 
       // Check password
+      console.log("🔐 Verifying password...");
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
+        console.log("❌ Password verification failed for user:", username);
         return ResponseHandler.error(res, "Invalid credentials", 401);
       }
 
+      console.log("✅ Password verified successfully");
+
       // Generate token
+      console.log("🎫 Generating JWT token...");
       const token = jwt.sign(
         {
           id: user.id,
@@ -77,15 +116,41 @@ class AuthController {
           role: user.role,
         },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE }
+        { expiresIn: process.env.JWT_EXPIRE || "24h" }
       );
 
+      console.log("✅ Login successful for user:", username);
       ResponseHandler.success(res, { token });
     } catch (error) {
-      console.error("Login error:", error);
-      ResponseHandler.error(res, "Failed to login");
+      console.error("❌ Login error:", error);
+      console.error("❌ Error stack:", error.stack);
+
+      // Handle specific database errors
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+        console.error("❌ Database connection failed");
+        return ResponseHandler.error(res, "Database connection failed", 500);
+      }
+
+      if (error.code === "ER_ACCESS_DENIED_ERROR") {
+        console.error("❌ Database authentication failed");
+        return ResponseHandler.error(
+          res,
+          "Database authentication failed",
+          500
+        );
+      }
+
+      if (error.code === "ER_BAD_DB_ERROR") {
+        console.error("❌ Database not found");
+        return ResponseHandler.error(res, "Database not found", 500);
+      }
+
+      ResponseHandler.error(res, "Failed to login", 500);
     } finally {
-      connection.release();
+      if (connection) {
+        console.log("🔌 Releasing database connection");
+        connection.release();
+      }
     }
   }
 

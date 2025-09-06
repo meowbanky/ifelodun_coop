@@ -1347,14 +1347,29 @@ ORDER BY month ASC
           ) {
             await connection.beginTransaction();
             try {
-              for (const row of selected_rows) {
+              // Filter out invalid rows (like opening balance rows that don't have proper member_id/period_id)
+              const validRows = selected_rows.filter(
+                (row) =>
+                  row &&
+                  row.member_id &&
+                  row.period_id &&
+                  row.period_id !== "opening_balance" && // Skip opening balance rows
+                  !isNaN(parseInt(row.period_id)) // Only check period_id is numeric, member_id can be string or number
+              );
+
+              console.log(
+                `Filtered ${selected_rows.length} total rows to ${validRows.length} valid rows for deletion`
+              );
+
+              if (validRows.length === 0) {
+                throw new Error(
+                  "No valid rows found for deletion. Opening balance rows and invalid rows cannot be deleted."
+                );
+              }
+
+              for (const row of validRows) {
                 const memberId = parseInt(row.member_id);
                 const periodId = parseInt(row.period_id);
-                if (isNaN(memberId) || isNaN(periodId)) {
-                  throw new Error(
-                    "Invalid member_id or period_id in selected_rows"
-                  );
-                }
 
                 console.log(
                   `Deleting transactions for member ${memberId}, period ${periodId}`
@@ -1422,6 +1437,10 @@ ORDER BY month ASC
                 );
                 await connection.query(
                   `DELETE FROM member_balances WHERE member_id = ? AND period_id = ?`,
+                  [memberId, periodId]
+                );
+                await connection.query(
+                  `DELETE FROM withdrawals WHERE member_id = ? AND period_id = ?`,
                   [memberId, periodId]
                 );
 
@@ -1762,10 +1781,44 @@ ORDER BY month ASC
             reportTable.rows
           );
 
+          // Create member_ids and period_ids arrays that correspond to the reportRows array
+          const reportMemberIds = [];
+          const reportPeriodIds = [];
+
+          // Build arrays based on the actual reportRows structure
+          for (const reportRow of reportRows) {
+            // Extract member_id and period_id from the reportRow
+            const memberNumber = reportRow[1]; // Coop Member No is at index 1
+            const periodName = reportRow[3]; // Period is at index 3
+
+            // Check if this is an opening balance row
+            if (periodName && periodName.includes("Opening Balance")) {
+              // For opening balance rows, find the member's database ID
+              const originalRow = rows.find(
+                (row) => row.member_id === memberNumber
+              );
+              reportMemberIds.push(
+                originalRow ? originalRow.member_id_num : "N/A"
+              );
+              reportPeriodIds.push("opening_balance"); // Special identifier for opening balance rows
+            } else {
+              // For regular rows, we need to find the corresponding period_id and member_id_num
+              const originalRow = rows.find(
+                (row) =>
+                  row.member_id === memberNumber &&
+                  row.period_name === periodName
+              );
+              reportMemberIds.push(
+                originalRow ? originalRow.member_id_num : "N/A"
+              );
+              reportPeriodIds.push(originalRow ? originalRow.period_id : "N/A");
+            }
+          }
+
           reportData = {
             reportTable,
-            member_ids: rows.map((row) => row.member_id_num || "N/A"),
-            period_ids: rows.map((row) => row.period_id || "N/A"),
+            member_ids: reportMemberIds,
+            period_ids: reportPeriodIds,
             message: delete_transactions
               ? "Transactions deleted and custom spreadsheet report generated successfully"
               : "Custom spreadsheet report with running balances generated successfully",

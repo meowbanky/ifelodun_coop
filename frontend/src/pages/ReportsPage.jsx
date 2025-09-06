@@ -660,6 +660,10 @@ const ReportsPage = () => {
                               r.period_id ===
                                 reportData.reportTable.period_ids[rowIdx]
                           )}
+                          disabled={
+                            reportData.reportTable.period_ids[rowIdx] ===
+                            "opening_balance"
+                          }
                           onChange={() =>
                             handleCheckboxChange(
                               reportData.reportTable.member_ids[rowIdx],

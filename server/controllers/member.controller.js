@@ -270,6 +270,7 @@ class MemberController {
           m.first_name, 
           m.last_name, 
           m.phone_number,
+          m.stop_loan_interest,
           COALESCE(SUM(COALESCE(mb.shares, 0) + COALESCE(mb.savings, 0)), 0) AS total_savings,
           COALESCE((
             SELECT SUM(COALESCE(l.amount, 0))
@@ -290,7 +291,7 @@ class MemberController {
           ), 0) AS active_loan_count
         FROM members m
         LEFT JOIN member_balances mb ON m.id = mb.member_id
-        GROUP BY m.id, m.member_id, m.first_name, m.last_name, m.phone_number`
+        GROUP BY m.id, m.member_id, m.first_name, m.last_name, m.phone_number, m.stop_loan_interest`
       );
 
       const formattedMembers = members.map((member) => {
@@ -301,6 +302,7 @@ class MemberController {
           total_savings: parseFloat(savings),
           loan_balance: parseFloat(balance),
           active_loan_count: member.active_loan_count,
+          stop_loan_interest: member.stop_loan_interest || false,
         };
       });
 
@@ -312,6 +314,61 @@ class MemberController {
     } catch (error) {
       console.error("List members error:", error);
       ResponseHandler.error(res, "Failed to fetch members");
+    } finally {
+      connection.release();
+    }
+  }
+
+  async listMembersWithStopInterest(req, res) {
+    const connection = await pool.getConnection();
+    try {
+      const [members] = await connection.execute(
+        `SELECT 
+          m.id, 
+          m.member_id, 
+          m.first_name, 
+          m.last_name, 
+          m.phone_number,
+          m.stop_loan_interest,
+          m.membership_date,
+          COALESCE(SUM(COALESCE(mb.shares, 0) + COALESCE(mb.savings, 0)), 0) AS total_savings,
+          COALESCE((
+            SELECT SUM(COALESCE(l.amount, 0))
+            FROM loans l
+            WHERE l.member_id = m.id AND l.status = 'active'
+          ), 0) - COALESCE((
+            SELECT SUM(COALESCE(lr.amount, 0))
+            FROM loan_repayments lr
+            WHERE lr.member_id = m.id
+            AND lr.loan_id IN (
+              SELECT id FROM loans WHERE member_id = m.id AND status = 'active'
+            )
+          ), 0) AS loan_balance
+        FROM members m
+        LEFT JOIN member_balances mb ON m.id = mb.member_id
+        WHERE m.stop_loan_interest = true
+        GROUP BY m.id, m.member_id, m.first_name, m.last_name, m.phone_number, m.stop_loan_interest, m.membership_date`
+      );
+
+      const formattedMembers = members.map((member) => {
+        const savings = parseFloat(member.total_savings || 0).toFixed(2);
+        const balance = parseFloat(member.loan_balance || 0).toFixed(2);
+        return {
+          ...member,
+          total_savings: parseFloat(savings),
+          loan_balance: parseFloat(balance),
+          stop_loan_interest: member.stop_loan_interest || false,
+        };
+      });
+
+      ResponseHandler.success(
+        res,
+        formattedMembers,
+        "Members with stop interest retrieved successfully"
+      );
+    } catch (error) {
+      console.error("List members with stop interest error:", error);
+      ResponseHandler.error(res, "Failed to fetch members with stop interest");
     } finally {
       connection.release();
     }
@@ -565,6 +622,230 @@ class MemberController {
       await connection.rollback();
       console.error("Update member error:", error);
       ResponseHandler.error(res, "Failed to update member");
+    } finally {
+      connection.release();
+    }
+  }
+
+  // Search members by name or member ID
+  async searchMembers(req, res) {
+    const connection = await pool.getConnection();
+    try {
+      const { query } = req.query;
+
+      if (!query || query.trim().length < 2) {
+        return ResponseHandler.error(
+          res,
+          "Search query must be at least 2 characters",
+          400
+        );
+      }
+
+      const searchTerm = `%${query.trim()}%`;
+      const [members] = await connection.execute(
+        `SELECT id, member_id, first_name, last_name, email, phone_number, membership_status
+         FROM members 
+         WHERE first_name LIKE ? OR last_name LIKE ? OR member_id LIKE ? OR email LIKE ?
+         ORDER BY first_name, last_name
+         LIMIT 20`,
+        [searchTerm, searchTerm, searchTerm, searchTerm]
+      );
+
+      ResponseHandler.success(res, members, "Members found successfully");
+    } catch (error) {
+      console.error("Search members error:", error);
+      ResponseHandler.error(res, "Failed to search members");
+    } finally {
+      connection.release();
+    }
+  }
+
+  // Get member financial data for a specific period
+  async getMemberFinancialData(req, res) {
+    const connection = await pool.getConnection();
+    try {
+      const { memberId, periodId } = req.params;
+
+      // Get member details
+      const [[member]] = await connection.execute(
+        `SELECT id, member_id, first_name, last_name FROM members WHERE id = ?`,
+        [memberId]
+      );
+
+      if (!member) {
+        return ResponseHandler.error(res, "Member not found", 404);
+      }
+
+      // Get period details
+      const [[period]] = await connection.execute(
+        `SELECT id, name, status FROM periods WHERE id = ?`,
+        [periodId]
+      );
+
+      if (!period) {
+        return ResponseHandler.error(res, "Period not found", 404);
+      }
+
+      // Get member balances for the period
+      const [[balances]] = await connection.execute(
+        `SELECT savings, shares FROM member_balances WHERE member_id = ? AND period_id = ?`,
+        [memberId, periodId]
+      );
+
+      // Get active loans for the period
+      const [loans] = await connection.execute(
+        `SELECT id, amount, interest_rate, status, grant_date, due_date 
+         FROM loans WHERE member_id = ? AND period_id = ?`,
+        [memberId, periodId]
+      );
+
+      // Get interest charged for the period
+      const [[interestCharged]] = await connection.execute(
+        `SELECT COALESCE(SUM(amount), 0) as total_charged 
+         FROM interest_charged WHERE member_id = ? AND period_id = ?`,
+        [memberId, periodId]
+      );
+
+      // Get interest paid for the period
+      const [[interestPaid]] = await connection.execute(
+        `SELECT COALESCE(SUM(amount), 0) as total_paid 
+         FROM interest_paid WHERE member_id = ? AND period_id = ?`,
+        [memberId, periodId]
+      );
+
+      const financialData = {
+        member: member,
+        period: period,
+        balances: balances || { savings: 0, shares: 0 },
+        loans: loans,
+        interestCharged: parseFloat(interestCharged.total_charged),
+        interestPaid: parseFloat(interestPaid.total_paid),
+        interestOutstanding:
+          parseFloat(interestCharged.total_charged) -
+          parseFloat(interestPaid.total_paid),
+      };
+
+      ResponseHandler.success(
+        res,
+        financialData,
+        "Member financial data retrieved successfully"
+      );
+    } catch (error) {
+      console.error("Get member financial data error:", error);
+      ResponseHandler.error(res, "Failed to get member financial data");
+    } finally {
+      connection.release();
+    }
+  }
+
+  // Update member financial data
+  async updateMemberFinancialData(req, res) {
+    const connection = await pool.getConnection();
+    try {
+      const { memberId, periodId } = req.params;
+      const { savings, shares, loans, interestCharged, interestPaid } =
+        req.body;
+
+      await connection.beginTransaction();
+
+      // Update or insert member balances
+      if (savings !== undefined || shares !== undefined) {
+        const [[existingBalance]] = await connection.execute(
+          `SELECT id FROM member_balances WHERE member_id = ? AND period_id = ?`,
+          [memberId, periodId]
+        );
+
+        if (existingBalance) {
+          await connection.execute(
+            `UPDATE member_balances SET savings = ?, shares = ? WHERE member_id = ? AND period_id = ?`,
+            [savings || 0, shares || 0, memberId, periodId]
+          );
+        } else {
+          await connection.execute(
+            `INSERT INTO member_balances (member_id, period_id, savings, shares) VALUES (?, ?, ?, ?)`,
+            [memberId, periodId, savings || 0, shares || 0]
+          );
+        }
+      }
+
+      // Update loans
+      if (loans && Array.isArray(loans)) {
+        for (const loan of loans) {
+          if (loan.id) {
+            // Update existing loan
+            await connection.execute(
+              `UPDATE loans SET amount = ?, interest_rate = ?, status = ? WHERE id = ?`,
+              [loan.amount, loan.interest_rate, loan.status, loan.id]
+            );
+          } else {
+            // Insert new loan
+            await connection.execute(
+              `INSERT INTO loans (member_id, period_id, amount, interest_rate, status, grant_date, due_date, application_date)
+               VALUES (?, ?, ?, ?, ?, ?, ?, CURDATE())`,
+              [
+                memberId,
+                periodId,
+                loan.amount,
+                loan.interest_rate,
+                loan.status,
+                loan.grant_date,
+                loan.due_date,
+              ]
+            );
+          }
+        }
+      }
+
+      // Update interest charged
+      if (interestCharged !== undefined) {
+        const [[existingInterest]] = await connection.execute(
+          `SELECT id FROM interest_charged WHERE member_id = ? AND period_id = ?`,
+          [memberId, periodId]
+        );
+
+        if (existingInterest) {
+          await connection.execute(
+            `UPDATE interest_charged SET amount = ? WHERE member_id = ? AND period_id = ?`,
+            [interestCharged, memberId, periodId]
+          );
+        } else {
+          await connection.execute(
+            `INSERT INTO interest_charged (member_id, period_id, amount, charged_date) VALUES (?, ?, ?, CURDATE())`,
+            [memberId, periodId, interestCharged]
+          );
+        }
+      }
+
+      // Update interest paid
+      if (interestPaid !== undefined) {
+        const [[existingPaid]] = await connection.execute(
+          `SELECT id FROM interest_paid WHERE member_id = ? AND period_id = ?`,
+          [memberId, periodId]
+        );
+
+        if (existingPaid) {
+          await connection.execute(
+            `UPDATE interest_paid SET amount = ? WHERE member_id = ? AND period_id = ?`,
+            [interestPaid, memberId, periodId]
+          );
+        } else {
+          await connection.execute(
+            `INSERT INTO interest_paid (member_id, period_id, amount, payment_date) VALUES (?, ?, ?, CURDATE())`,
+            [memberId, periodId, interestPaid]
+          );
+        }
+      }
+
+      await connection.commit();
+      ResponseHandler.success(
+        res,
+        null,
+        "Member financial data updated successfully"
+      );
+    } catch (error) {
+      await connection.rollback();
+      console.error("Update member financial data error:", error);
+      ResponseHandler.error(res, "Failed to update member financial data");
     } finally {
       connection.release();
     }
