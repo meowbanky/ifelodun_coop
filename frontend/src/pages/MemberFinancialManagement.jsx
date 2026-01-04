@@ -15,6 +15,26 @@ const MemberFinancialManagement = () => {
   const [saving, setSaving] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [dialog, setDialog] = useState({ message: "", type: "", show: false });
+  
+  // Debug: Log dialog state changes
+  useEffect(() => {
+    console.log("Dialog state changed:", dialog);
+    if (dialog.show && !dialog.message) {
+      console.error("⚠️ Dialog is showing with empty message! Type:", dialog.type);
+    }
+  }, [dialog]);
+  
+  // Wrapper to safely set dialog - ensures message is never empty when show is true
+  const safeSetDialog = (dialogState) => {
+    if (dialogState.show && (!dialogState.message || dialogState.message.trim() === "")) {
+      console.error("⚠️ Attempted to show dialog with empty message! Original state:", dialogState);
+      console.error("⚠️ Stack trace:", new Error().stack);
+      // Don't set the dialog if message is empty
+      return;
+    }
+    console.log("Setting dialog:", dialogState);
+    setDialog(dialogState);
+  };
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [formData, setFormData] = useState({
@@ -68,32 +88,52 @@ const MemberFinancialManagement = () => {
   }, []);
 
   useEffect(() => {
-    try {
-      fetchPeriods();
-    } catch (error) {
-      console.error("Error in useEffect:", error);
-      setHasError(true);
-    }
+    const loadData = async () => {
+      try {
+        await fetchPeriods();
+      } catch (error) {
+        console.error("Error in useEffect:", error);
+        setHasError(true);
+      }
+    };
+    loadData();
   }, []);
 
   const fetchPeriods = async () => {
     try {
       console.log("Fetching periods...");
       const response = await api.get("/periods/list", { headers: authHeader });
-      console.log("Periods response:", response.data);
+      console.log("Periods full response:", response);
+      console.log("Periods response.data:", response.data);
+      console.log("Periods response.data.data:", response.data?.data);
+      console.log("Periods response.data.success:", response.data?.success);
+      console.log("Periods response.data.message:", response.data?.message);
 
-      if (response.data && response.data.data) {
-        setPeriods(response.data.data || []);
-        console.log(
-          "Periods loaded successfully:",
-          response.data.data.length,
-          "periods"
-        );
+      // Check multiple possible response structures
+      let periodsData = null;
+      if (response.data?.data) {
+        // Expected structure: { success: true, message: "...", data: [...] }
+        periodsData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        // Direct array response
+        periodsData = response.data;
+      } else if (response.data?.success && response.data?.data) {
+        // Alternative structure
+        periodsData = response.data.data;
+      }
+
+      if (periodsData && Array.isArray(periodsData)) {
+        setPeriods(periodsData);
+        console.log("Periods loaded successfully:", periodsData.length, "periods");
       } else {
         console.error("Invalid periods response structure:", response.data);
         console.log("Setting error dialog for invalid response");
-        setDialog({
-          message: "Invalid response from server",
+        const errorMsg = response.data?.message 
+          || response.data?.error 
+          || `Invalid response structure. Received: ${JSON.stringify(response.data).substring(0, 100)}`;
+        console.error("Error message being set:", errorMsg);
+        safeSetDialog({
+          message: errorMsg,
           type: "error",
           show: true,
         });
@@ -101,9 +141,25 @@ const MemberFinancialManagement = () => {
     } catch (error) {
       console.error("Failed to fetch periods:", error);
       console.error("Periods error details:", error.response?.data);
+      console.error("Error response status:", error.response?.status);
+      console.error("Error message:", error.message);
+      console.error("Full error object:", JSON.stringify(error, null, 2));
       console.log("Setting error dialog for periods fetch error");
-      setDialog({
-        message: error.response?.data?.message || "Failed to load periods",
+      
+      // Extract error message with multiple fallbacks
+      let errorMessage = "Failed to load periods";
+      if (error.response?.data) {
+        errorMessage = error.response.data.message 
+          || error.response.data.error 
+          || error.response.data.errors?.[0]
+          || `Server error (${error.response.status})`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.error("Final error message:", errorMessage);
+      safeSetDialog({
+        message: errorMessage,
         type: "error",
         show: true,
       });
@@ -131,8 +187,22 @@ const MemberFinancialManagement = () => {
     } catch (error) {
       console.error("Search failed:", error);
       console.error("Search error details:", error.response?.data);
-      setDialog({
-        message: error.response?.data?.message || "Search failed",
+      console.error("Error response status:", error.response?.status);
+      console.error("Error message:", error.message);
+      
+      // Extract error message with multiple fallbacks
+      let errorMessage = "Search failed";
+      if (error.response?.data) {
+        errorMessage = error.response.data.message 
+          || error.response.data.error 
+          || error.response.data.errors?.[0]
+          || `Server error (${error.response.status})`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      safeSetDialog({
+        message: errorMessage,
         type: "error",
         show: true,
       });
@@ -193,8 +263,9 @@ const MemberFinancialManagement = () => {
         });
       } else {
         console.error("Invalid response structure:", response.data);
-        setDialog({
-          message: "Invalid response from server",
+        const errorMsg = response.data?.message || response.data?.error || "Invalid response from server";
+        safeSetDialog({
+          message: errorMsg,
           type: "error",
           show: true,
         });
@@ -202,9 +273,22 @@ const MemberFinancialManagement = () => {
     } catch (error) {
       console.error("Failed to fetch financial data:", error);
       console.error("Error details:", error.response?.data);
-      setDialog({
-        message:
-          error.response?.data?.message || "Failed to load financial data",
+      console.error("Error response status:", error.response?.status);
+      console.error("Error message:", error.message);
+      
+      // Extract error message with multiple fallbacks
+      let errorMessage = "Failed to load financial data";
+      if (error.response?.data) {
+        errorMessage = error.response.data.message 
+          || error.response.data.error 
+          || error.response.data.errors?.[0]
+          || `Server error (${error.response.status})`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      safeSetDialog({
+        message: errorMessage,
         type: "error",
         show: true,
       });
@@ -254,7 +338,7 @@ const MemberFinancialManagement = () => {
 
   const handleSave = async () => {
     if (!selectedMember || !selectedPeriod) {
-      setDialog({
+      safeSetDialog({
         message: "Please select both member and period",
         type: "error",
         show: true,
@@ -270,7 +354,7 @@ const MemberFinancialManagement = () => {
         { headers: authHeader }
       );
 
-      setDialog({
+      safeSetDialog({
         message: "Financial data updated successfully",
         type: "success",
         show: true,
@@ -280,9 +364,23 @@ const MemberFinancialManagement = () => {
       fetchFinancialData(selectedMember.id, selectedPeriod.id);
     } catch (error) {
       console.error("Failed to save financial data:", error);
-      setDialog({
-        message:
-          error.response?.data?.message || "Failed to save financial data",
+      console.error("Error details:", error.response?.data);
+      console.error("Error response status:", error.response?.status);
+      console.error("Error message:", error.message);
+      
+      // Extract error message with multiple fallbacks
+      let errorMessage = "Failed to save financial data";
+      if (error.response?.data) {
+        errorMessage = error.response.data.message 
+          || error.response.data.error 
+          || error.response.data.errors?.[0]
+          || `Server error (${error.response.status})`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      safeSetDialog({
+        message: errorMessage,
         type: "error",
         show: true,
       });
@@ -668,12 +766,17 @@ const MemberFinancialManagement = () => {
         </motion.div>
       </div>
 
-      <Dialog
-        message={dialog.message}
-        type={dialog.type}
-        show={dialog.show}
-        onClose={() => setDialog({ message: "", type: "", show: false })}
-      />
+      {dialog.show && dialog.message && (
+        <Dialog
+          message={dialog.message}
+          type={dialog.type}
+          show={dialog.show}
+          onClose={() => {
+            console.log("Dialog closed");
+            setDialog({ message: "", type: "", show: false });
+          }}
+        />
+      )}
     </div>
   );
 };

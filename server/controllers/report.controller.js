@@ -175,115 +175,115 @@ class ReportController {
       // Repayment Trends (last 12 months based on periods)
       const [repayTrend] = await connection.execute(`
         WITH LoanRepayments AS (
-  SELECT period_id, SUM(amount) AS total_loan_repaid
-  FROM loan_repayments
-  GROUP BY period_id
-),
-InterestCharged AS (
-  SELECT period_id, SUM(amount) AS total_interest_charged
-  FROM interest_charged
-  GROUP BY period_id
-),
-InterestPaid AS (
-  SELECT period_id, SUM(amount) AS total_interest_repaid
-  FROM interest_paid
-  GROUP BY period_id
-)
-SELECT 
-  CONCAT(
-    SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
-    '-',
-    LPAD(
-      CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
-        WHEN 'january' THEN 1
-        WHEN 'february' THEN 2
-        WHEN 'march' THEN 3
-        WHEN 'april' THEN 4
-        WHEN 'may' THEN 5
-        WHEN 'june' THEN 6
-        WHEN 'july' THEN 7
-        WHEN 'august' THEN 8
-        WHEN 'september' THEN 9
-        WHEN 'october' THEN 10
-        WHEN 'november' THEN 11
-        WHEN 'december' THEN 12
-        ELSE 0
-      END, 2, '0'
-    )
-  ) AS month,
-  COALESCE(SUM(lr.total_loan_repaid), 0) AS total_loan_repaid,
-  COALESCE(SUM(ip.total_interest_repaid), 0) AS total_interest_repaid,
-  COALESCE(SUM(ic.total_interest_charged) - COALESCE(SUM(ip.total_interest_repaid), 0), 0) AS total_interest_unpaid
-FROM periods p
-LEFT JOIN LoanRepayments lr ON lr.period_id = p.id
-LEFT JOIN InterestCharged ic ON ic.period_id = p.id
-LEFT JOIN InterestPaid ip ON ip.period_id = p.id
-WHERE p.name REGEXP '^[A-Za-z]+ [0-9]{4}$'
-  AND CONCAT(
-    SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
-    '-',
-    LPAD(
-      CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
-        WHEN 'january' THEN 1
-        WHEN 'february' THEN 2
-        WHEN 'march' THEN 3
-        WHEN 'april' THEN 4
-        WHEN 'may' THEN 5
-        WHEN 'june' THEN 6
-        WHEN 'july' THEN 7
-        WHEN 'august' THEN 8
-        WHEN 'september' THEN 9
-        WHEN 'october' THEN 10
-        WHEN 'november' THEN 11
-        WHEN 'december' THEN 12
-        ELSE 0
-      END, 2, '0'
-    )
-  ) >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m')
-  AND CONCAT(
-    SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
-    '-',
-    LPAD(
-      CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
-        WHEN 'january' THEN 1
-        WHEN 'february' THEN 2
-        WHEN 'march' THEN 3
-        WHEN 'april' THEN 4
-        WHEN 'may' THEN 5
-        WHEN 'june' THEN 6
-        WHEN 'july' THEN 7
-        WHEN 'august' THEN 8
-        WHEN 'september' THEN 9
-        WHEN 'october' THEN 10
-        WHEN 'november' THEN 11
-        WHEN 'december' THEN 12
-        ELSE 0
-      END, 2, '0'
-    )
-  ) <= DATE_FORMAT(CURDATE(), '%Y-%m')
-GROUP BY CONCAT(
-  SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
-  '-',
-  LPAD(
-    CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
-      WHEN 'january' THEN 1
-      WHEN 'february' THEN 2
-      WHEN 'march' THEN 3
-      WHEN 'april' THEN 4
-      WHEN 'may' THEN 5
-      WHEN 'june' THEN 6
-      WHEN 'july' THEN 7
-      WHEN 'august' THEN 8
-      WHEN 'september' THEN 9
-      WHEN 'october' THEN 10
-      WHEN 'november' THEN 11
-      WHEN 'december' THEN 12
-      ELSE 0
-    END, 2, '0'
-  )
-)
-HAVING month != '0000-00'
-ORDER BY month ASC
+          SELECT period_id, SUM(amount) AS total_loan_repaid
+          FROM loan_repayments
+          GROUP BY period_id
+        ),
+        InterestCharged AS (
+          SELECT period_id, SUM(amount) AS total_interest_charged
+          FROM interest_charged
+          GROUP BY period_id
+        ),
+        InterestPaid AS (
+          SELECT period_id, SUM(amount) AS total_interest_repaid
+          FROM interest_paid
+          GROUP BY period_id
+        )
+        SELECT 
+          CONCAT(
+            SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
+            '-',
+            LPAD(
+              CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
+                WHEN 'january' THEN 1
+                WHEN 'february' THEN 2
+                WHEN 'march' THEN 3
+                WHEN 'april' THEN 4
+                WHEN 'may' THEN 5
+                WHEN 'june' THEN 6
+                WHEN 'july' THEN 7
+                WHEN 'august' THEN 8
+                WHEN 'september' THEN 9
+                WHEN 'october' THEN 10
+                WHEN 'november' THEN 11
+                WHEN 'december' THEN 12
+                ELSE 0
+              END, 2, '0'
+            )
+          ) AS month,
+          COALESCE(SUM(lr.total_loan_repaid), 0) AS total_loan_repaid,
+          COALESCE(SUM(ip.total_interest_repaid), 0) AS total_interest_repaid,
+          COALESCE(SUM(ic.total_interest_charged) - COALESCE(SUM(ip.total_interest_repaid), 0), 0) AS total_interest_unpaid
+        FROM periods p
+        LEFT JOIN LoanRepayments lr ON lr.period_id = p.id
+        LEFT JOIN InterestCharged ic ON ic.period_id = p.id
+        LEFT JOIN InterestPaid ip ON ip.period_id = p.id
+        WHERE p.name REGEXP '^[A-Za-z]+ [0-9]{4}$'
+          AND CONCAT(
+            SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
+            '-',
+            LPAD(
+              CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
+                WHEN 'january' THEN 1
+                WHEN 'february' THEN 2
+                WHEN 'march' THEN 3
+                WHEN 'april' THEN 4
+                WHEN 'may' THEN 5
+                WHEN 'june' THEN 6
+                WHEN 'july' THEN 7
+                WHEN 'august' THEN 8
+                WHEN 'september' THEN 9
+                WHEN 'october' THEN 10
+                WHEN 'november' THEN 11
+                WHEN 'december' THEN 12
+                ELSE 0
+              END, 2, '0'
+            )
+          ) >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m')
+          AND CONCAT(
+            SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
+            '-',
+            LPAD(
+              CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
+                WHEN 'january' THEN 1
+                WHEN 'february' THEN 2
+                WHEN 'march' THEN 3
+                WHEN 'april' THEN 4
+                WHEN 'may' THEN 5
+                WHEN 'june' THEN 6
+                WHEN 'july' THEN 7
+                WHEN 'august' THEN 8
+                WHEN 'september' THEN 9
+                WHEN 'october' THEN 10
+                WHEN 'november' THEN 11
+                WHEN 'december' THEN 12
+                ELSE 0
+              END, 2, '0'
+            )
+          ) <= DATE_FORMAT(CURDATE(), '%Y-%m')
+        GROUP BY CONCAT(
+          SUBSTRING(p.name, LOCATE(' ', p.name) + 1),
+          '-',
+          LPAD(
+            CASE LOWER(LEFT(p.name, LOCATE(' ', p.name) - 1))
+              WHEN 'january' THEN 1
+              WHEN 'february' THEN 2
+              WHEN 'march' THEN 3
+              WHEN 'april' THEN 4
+              WHEN 'may' THEN 5
+              WHEN 'june' THEN 6
+              WHEN 'july' THEN 7
+              WHEN 'august' THEN 8
+              WHEN 'september' THEN 9
+              WHEN 'october' THEN 10
+              WHEN 'november' THEN 11
+              WHEN 'december' THEN 12
+              ELSE 0
+            END, 2, '0'
+          )
+        )
+        HAVING month != '0000-00'
+        ORDER BY month ASC
       `);
 
       const [interestUnpaidTrend] = await connection.execute(`
@@ -1353,8 +1353,8 @@ ORDER BY month ASC
                   row &&
                   row.member_id &&
                   row.period_id &&
-                  row.period_id !== "opening_balance" && // Skip opening balance rows
-                  !isNaN(parseInt(row.period_id)) // Only check period_id is numeric, member_id can be string or number
+                  row.period_id !== "opening_balance" &&
+                  !isNaN(parseInt(row.period_id))
               );
 
               console.log(
@@ -1390,7 +1390,6 @@ ORDER BY month ASC
                 );
 
                 if (loanCheck.length > 0) {
-                  // Iterate over all loans and update status to 'pending' if not already pending
                   for (const loan of loanCheck) {
                     if (loan.status !== "pending") {
                       await connection.query(
@@ -1503,37 +1502,61 @@ ORDER BY month ASC
 
           // 2. Get opening balances for each member before the first period (including withdrawals)
           const openingBalances = {};
+          let isFirstPeriodDecember = false;
+
           if (memberIds.length > 0) {
-            const [openRows] = await connection.query(
-              `SELECT
-                m.id AS member_id_num,
-                COALESCE(SUM(mb.shares), 0) AS opening_shares,
-                COALESCE(SUM(mb.savings), 0) AS opening_savings,
-                COALESCE(SUM(l.amount), 0) AS opening_loan_amount,
-                COALESCE(SUM(lr.amount), 0) AS opening_loan_repayment,
-                COALESCE(SUM(ic.amount), 0) AS opening_interest_charged,
-                COALESCE(SUM(ip.amount), 0) AS opening_interest_paid,
-                COALESCE(SUM(c.amount), 0) AS opening_commodity_amount,
-                COALESCE(SUM(cr.amount), 0) AS opening_commodity_repayment,
-                COALESCE(SUM(dlf.amount), 0) AS opening_dev_levy,
-                COALESCE(SUM(sf.amount), 0) AS opening_stationery,
-                COALESCE(SUM(ef.amount), 0) AS opening_entry_fees,
-                COALESCE(SUM(w.amount), 0) AS opening_withdrawal
-              FROM members m
-              LEFT JOIN member_balances mb ON m.id = mb.member_id AND mb.period_id < ?
-              LEFT JOIN loans l ON m.id = l.member_id AND l.period_id < ?
-              LEFT JOIN loan_repayments lr ON m.id = lr.member_id AND lr.period_id < ?
-              LEFT JOIN interest_charged ic ON m.id = ic.member_id AND ic.period_id < ?
-              LEFT JOIN interest_paid ip ON m.id = ip.member_id AND ip.period_id < ?
-              LEFT JOIN commodities c ON m.id = c.member_id AND c.period_id < ?
-              LEFT JOIN commodity_repayments cr ON m.id = cr.member_id AND cr.period_id < ?
-              LEFT JOIN development_levy_fees dlf ON m.id = dlf.member_id AND dlf.period_id < ?
-              LEFT JOIN stationery_fees sf ON m.id = sf.member_id AND sf.period_id < ?
-              LEFT JOIN entry_fees ef ON m.id = ef.member_id AND ef.period_id < ?
-              LEFT JOIN withdrawals w ON m.id = w.member_id AND w.period_id < ?
-              WHERE m.id IN (${memberIds.map(() => "?").join(",")})
-              GROUP BY m.id`,
-              [
+            // First, get the actual first period name to determine if we need opening balance
+            const [firstPeriod] = await connection.query(
+              `SELECT id, name FROM periods WHERE id = ?`,
+              [fromId]
+            );
+
+            const firstPeriodName = firstPeriod[0]?.name || "";
+            isFirstPeriodDecember = firstPeriodName
+              .toLowerCase()
+              .includes("december");
+
+            if (isFirstPeriodDecember) {
+              // If the first period is December, set opening balances to zero
+              for (const memberId of memberIds) {
+                openingBalances[memberId] = {
+                  opening_shares: 0,
+                  opening_savings: 0,
+                  opening_loan_amount: 0,
+                  opening_loan_repayment: 0,
+                  opening_interest_charged: 0,
+                  opening_interest_paid: 0,
+                  opening_commodity_amount: 0,
+                  opening_commodity_repayment: 0,
+                  opening_dev_levy: 0,
+                  opening_stationery: 0,
+                  opening_entry_fees: 0,
+                  opening_withdrawal: 0,
+                };
+              }
+            } else {
+              // If not December, fetch opening balances for the members
+              const memberPlaceholders = memberIds.map(() => "?").join(",");
+              const query = `
+                SELECT
+                  m.id AS member_id_num,
+                  COALESCE((SELECT SUM(mb.shares) FROM member_balances mb WHERE mb.member_id = m.id AND mb.period_id < ?), 0) AS opening_shares,
+                  COALESCE((SELECT SUM(mb.savings) FROM member_balances mb WHERE mb.member_id = m.id AND mb.period_id < ?), 0) AS opening_savings,
+                  COALESCE((SELECT SUM(l.amount) FROM loans l WHERE l.member_id = m.id AND l.period_id < ?), 0) AS opening_loan_amount,
+                  COALESCE((SELECT SUM(lr.amount) FROM loan_repayments lr WHERE lr.member_id = m.id AND lr.period_id < ?), 0) AS opening_loan_repayment,
+                  COALESCE((SELECT SUM(ic.amount) FROM interest_charged ic WHERE ic.member_id = m.id AND ic.period_id < ?), 0) AS opening_interest_charged,
+                  COALESCE((SELECT SUM(ip.amount) FROM interest_paid ip WHERE ip.member_id = m.id AND ip.period_id < ?), 0) AS opening_interest_paid,
+                  COALESCE((SELECT SUM(c.amount) FROM commodities c WHERE c.member_id = m.id AND c.period_id < ?), 0) AS opening_commodity_amount,
+                  COALESCE((SELECT SUM(cr.amount) FROM commodity_repayments cr WHERE cr.member_id = m.id AND cr.period_id < ?), 0) AS opening_commodity_repayment,
+                  COALESCE((SELECT SUM(dlf.amount) FROM development_levy_fees dlf WHERE dlf.member_id = m.id AND dlf.period_id < ?), 0) AS opening_dev_levy,
+                  COALESCE((SELECT SUM(sf.amount) FROM stationery_fees sf WHERE sf.member_id = m.id AND sf.period_id < ?), 0) AS opening_stationery,
+                  COALESCE((SELECT SUM(ef.amount) FROM entry_fees ef WHERE ef.member_id = m.id AND ef.period_id < ?), 0) AS opening_entry_fees,
+                  COALESCE((SELECT SUM(w.amount) FROM withdrawals w WHERE w.member_id = m.id AND w.period_id < ?), 0) AS opening_withdrawal
+                FROM members m
+                WHERE m.id IN (${memberPlaceholders})
+              `;
+              const params = [
+                fromId,
                 fromId,
                 fromId,
                 fromId,
@@ -1546,34 +1569,55 @@ ORDER BY month ASC
                 fromId,
                 fromId,
                 ...memberIds,
-              ]
-            );
-            for (const row of openRows) {
-              openingBalances[row.member_id_num] = {
-                opening_shares: parseFloat(row.opening_shares || 0),
-                opening_savings: parseFloat(row.opening_savings || 0),
-                opening_loan_amount: parseFloat(row.opening_loan_amount || 0),
-                opening_loan_repayment: parseFloat(
-                  row.opening_loan_repayment || 0
-                ),
-                opening_interest_charged: parseFloat(
-                  row.opening_interest_charged || 0
-                ),
-                opening_interest_paid: parseFloat(
-                  row.opening_interest_paid || 0
-                ),
-                opening_commodity_amount: parseFloat(
-                  row.opening_commodity_amount || 0
-                ),
-                opening_commodity_repayment: parseFloat(
-                  row.opening_commodity_repayment || 0
-                ),
-                opening_dev_levy: parseFloat(row.opening_dev_levy || 0),
-                opening_stationery: parseFloat(row.opening_stationery || 0),
-                opening_entry_fees: parseFloat(row.opening_entry_fees || 0),
-                opening_withdrawal: parseFloat(row.opening_withdrawal || 0),
-              };
+              ];
+
+              console.log("Member IDs:", memberIds);
+              console.log("Member Placeholders:", memberPlaceholders);
+              console.log("Query:", query);
+              console.log("Parameters:", params);
+
+              const [openRows] = await connection.query(query, params);
+
+              for (const row of openRows) {
+                console.log(
+                  `Opening balance for member ${row.member_id_num}:`,
+                  {
+                    shares: row.opening_shares,
+                    savings: row.opening_savings,
+                    loan_amount: row.opening_loan_amount,
+                    loan_repayment: row.opening_loan_repayment,
+                    interest_charged: row.opening_interest_charged,
+                    interest_paid: row.opening_interest_paid,
+                  }
+                );
+                openingBalances[row.member_id_num] = {
+                  opening_shares: parseFloat(row.opening_shares || 0),
+                  opening_savings: parseFloat(row.opening_savings || 0),
+                  opening_loan_amount: parseFloat(row.opening_loan_amount || 0),
+                  opening_loan_repayment: parseFloat(
+                    row.opening_loan_repayment || 0
+                  ),
+                  opening_interest_charged: parseFloat(
+                    row.opening_interest_charged || 0
+                  ),
+                  opening_interest_paid: parseFloat(
+                    row.opening_interest_paid || 0
+                  ),
+                  opening_commodity_amount: parseFloat(
+                    row.opening_commodity_amount || 0
+                  ),
+                  opening_commodity_repayment: parseFloat(
+                    row.opening_commodity_repayment || 0
+                  ),
+                  opening_dev_levy: parseFloat(row.opening_dev_levy || 0),
+                  opening_stationery: parseFloat(row.opening_stationery || 0),
+                  opening_entry_fees: parseFloat(row.opening_entry_fees || 0),
+                  opening_withdrawal: parseFloat(row.opening_withdrawal || 0),
+                };
+              }
             }
+          } else {
+            console.log("No members found for opening balances");
           }
 
           // 3. Fetch the main report rows as before, but also fetch withdrawals for each period
@@ -1626,7 +1670,6 @@ ORDER BY month ASC
           let reportRows = [];
           let lastMemberId = null;
           let sn = 1;
-          // Running totals for each member
           let runningShares = 0,
             runningSavings = 0,
             runningLoan = 0,
@@ -1643,7 +1686,6 @@ ORDER BY month ASC
             runningWithdrawal = 0;
           for (const row of rows) {
             if (row.member_id_num !== lastMemberId) {
-              // Insert opening balance row
               const open = openingBalances[row.member_id_num] || {
                 opening_shares: 0,
                 opening_savings: 0,
@@ -1676,11 +1718,15 @@ ORDER BY month ASC
                 open.opening_entry_fees +
                 open.opening_withdrawal
               ).toFixed(2);
+              const openingBalanceText = isFirstPeriodDecember
+                ? "Opening Balance (Before December 2024)"
+                : `Opening Balance (End of ${row.period_name})`;
+
               reportRows.push([
                 sn++,
                 row.member_id || "N/A",
                 `${row.first_name || "N/A"} ${row.last_name || "N/A"}`,
-                `Opening Balance (Before ${row.period_name})`,
+                openingBalanceText,
                 open.opening_shares.toFixed(2),
                 open.opening_shares.toFixed(2),
                 open.opening_savings.toFixed(2),
@@ -1700,7 +1746,6 @@ ORDER BY month ASC
                 open.opening_withdrawal.toFixed(2),
                 openingTotal,
               ]);
-              // Initialize running totals from opening balances
               runningShares = open.opening_shares;
               runningSavings = open.opening_savings;
               runningLoan = open.opening_loan_amount;
@@ -1715,7 +1760,6 @@ ORDER BY month ASC
               runningWithdrawal = open.opening_withdrawal;
               lastMemberId = row.member_id_num;
             }
-            // Add this period's amount to running totals
             runningShares += parseFloat(row.shares_amount || 0);
             runningSavings += parseFloat(row.savings_amount || 0);
             runningLoan += parseFloat(row.loan_amount || 0);
@@ -1730,7 +1774,6 @@ ORDER BY month ASC
             runningStationery += parseFloat(row.stationery || 0);
             runningEntryFees += parseFloat(row.entry_fees || 0);
             runningWithdrawal += parseFloat(row.withdrawal || 0);
-            // Calculate running balances
             const runningLoanBalance = runningLoan - runningLoanRepayment;
             const runningUnpaidInterest =
               runningInterestCharged - runningInterestPaid;
@@ -1781,28 +1824,22 @@ ORDER BY month ASC
             reportTable.rows
           );
 
-          // Create member_ids and period_ids arrays that correspond to the reportRows array
           const reportMemberIds = [];
           const reportPeriodIds = [];
 
-          // Build arrays based on the actual reportRows structure
           for (const reportRow of reportRows) {
-            // Extract member_id and period_id from the reportRow
-            const memberNumber = reportRow[1]; // Coop Member No is at index 1
-            const periodName = reportRow[3]; // Period is at index 3
+            const memberNumber = reportRow[1];
+            const periodName = reportRow[3];
 
-            // Check if this is an opening balance row
             if (periodName && periodName.includes("Opening Balance")) {
-              // For opening balance rows, find the member's database ID
               const originalRow = rows.find(
                 (row) => row.member_id === memberNumber
               );
               reportMemberIds.push(
                 originalRow ? originalRow.member_id_num : "N/A"
               );
-              reportPeriodIds.push("opening_balance"); // Special identifier for opening balance rows
+              reportPeriodIds.push("opening_balance");
             } else {
-              // For regular rows, we need to find the corresponding period_id and member_id_num
               const originalRow = rows.find(
                 (row) =>
                   row.member_id === memberNumber &&
@@ -1831,7 +1868,7 @@ ORDER BY month ASC
       }
 
       if (export_format) {
-        const reportTitle = `${report_type}_${fromId}_to_${toId}`;
+        const reportTitle = `Report_${fromId}_${toId}`.substring(0, 31);
         let headers = [];
         let rows = [];
         let footer = [];

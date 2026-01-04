@@ -1,0 +1,24 @@
+{
+    "name": "ifelodun/mobile-backend-php",
+    "description": "PHP API conversion of Ifelodun Mobile Backend",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "firebase/php-jwt": "^6.0",
+        "phpmailer/phpmailer": "^6.10"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ifelodun\\": "src/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

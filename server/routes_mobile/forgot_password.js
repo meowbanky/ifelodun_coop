@@ -18,29 +18,33 @@ router.get("/search", async (req, res) => {
 // 2. Get member email by ID
 router.get("/:id/email", async (req, res) => {
   const memberId = req.params.id;
-  const [[member]] = await pool.query(
-    `SELECT email FROM members WHERE id = ?`,
+  const [[result]] = await pool.query(
+    `SELECT u.email 
+     FROM members m 
+     INNER JOIN users u ON m.user_id = u.id 
+     WHERE m.id = ?`,
     [memberId]
   );
-  if (!member) return res.status(404).json({ error: "Member not found" });
-  res.json({ email: member.email });
+  if (!result) return res.status(404).json({ error: "Member not found" });
+  res.json({ email: result.email });
 });
 
 // 3. Send OTP to email
 router.post("/:id/send-otp", async (req, res) => {
   const memberId = req.params.id;
-  const [[member]] = await pool.query(
-    `SELECT email FROM members WHERE id = ?`,
+  const [[result]] = await pool.query(
+    `SELECT u.email 
+     FROM members m 
+     INNER JOIN users u ON m.user_id = u.id 
+     WHERE m.id = ?`,
     [memberId]
   );
 
   // Accept email from request body if not in DB
-  let email = member && member.email ? member.email : null;
+  let email = result && result.email ? result.email : null;
   if (!email && req.body && req.body.email) {
     email = req.body.email;
     console.log(`This is email sent: ${email}`);
-    // Optionally update the DB with this email:
-    // await pool.query(`UPDATE members SET email = ? WHERE id = ?`, [email, memberId]);
   }
 
   if (!email) return res.status(404).json({ error: "Email not found" });
@@ -211,12 +215,6 @@ router.post("/:id/update-email", async (req, res) => {
     await pool.query(`UPDATE users SET email = ? WHERE id = ?`, [
       email,
       member.user_id,
-    ]);
-
-    // Update email in members table
-    await pool.query(`UPDATE members SET email = ? WHERE user_id = ?`, [
-      email,
-      memberId,
     ]);
 
     res.json({ message: "Email updated successfully" });

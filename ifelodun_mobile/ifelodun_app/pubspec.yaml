@@ -1,0 +1,54 @@
+name: ifelodun_app
+description: A Flutter app for cooperative members.
+version: 1.0.1+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.2.2
+  pdf: ^3.11.0
+  printing: ^5.13.4
+  provider: ^6.1.2
+  go_router: ^13.0.0
+  shared_preferences: ^2.3.0
+  flutter_secure_storage: ^9.2.2
+  intl: ^0.19.0
+  google_fonts: ^6.2.1
+  local_auth: ^2.3.0
+  flutter_local_notifications: ^17.2.3
+  firebase_messaging: ^15.1.3
+  firebase_core: ^3.13.1
+  permission_handler: ^11.3.1
+  timezone: ^0.9.4
+  fl_chart: ^0.66.0
+  dio: ^5.2.0
+  cached_network_image: ^3.2.0
+  image_picker: ^0.8.7
+  path_provider: ^2.0.12
+  url_launcher: ^6.3.0
+  package_info_plus: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logo.png
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#FFFFFF" # White background for adaptive icon
+  adaptive_icon_foreground: "assets/images/app_icon.png" # Optional foreground
+  min_sdk_android: 21 # Ensure adaptive icons are used (optional)
+  # Optional: Add padding to prevent the icon from being too big
+  adaptive_icon_padding: 0.2 # Adds 20% padding around the foreground (0.0 to 1.0)

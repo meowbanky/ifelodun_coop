@@ -7,6 +7,10 @@ import PropTypes from "prop-types";
  */
 const Dialog = ({ message, type, onClose }) => {
   const isSuccess = type === "success";
+  
+  // Ensure message is never empty
+  const displayMessage = message || (isSuccess ? "Operation completed successfully" : "An error occurred");
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -27,7 +31,7 @@ const Dialog = ({ message, type, onClose }) => {
             {isSuccess ? "Success" : "Error"}
           </h3>
         </div>
-        <p className="text-sm text-gray-700 mb-6">{message}</p>
+        <p className="text-sm text-gray-700 mb-6">{displayMessage}</p>
         <div className="flex justify-end">
           <motion.button
             whileHover={{ scale: 1.05 }}

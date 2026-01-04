@@ -130,13 +130,6 @@ function Members() {
         await api.put(`/members/${selectedMember.id}`, formData, {
           headers: authHeader,
         });
-        if (formData.email !== selectedMember.email) {
-          await api.put(
-            `/users/${selectedMember.user_id}`,
-            { email: formData.email },
-            { headers: authHeader }
-          );
-        }
         setDialog({
           message: "Member updated successfully!",
           type: "success",
@@ -152,6 +145,7 @@ function Members() {
           show: true,
         });
       }
+
       setShowForm(false);
       setSelectedMember(null);
       setFormData({

@@ -172,7 +172,7 @@ class PeriodController {
 
       // Validate period
       const [periods] = await connection.execute(
-        `SELECT id, status FROM periods WHERE id = ?`,
+        `SELECT id, name, status FROM periods WHERE id = ?`,
         [periodId]
       );
       if (periods.length === 0) {
@@ -181,6 +181,7 @@ class PeriodController {
       if (periods[0].status === "processed") {
         // throw new Error("Period already processed");
       }
+      const periodName = periods[0].name;
 
       // Fetch fixed fees
       const [feeConfigs] = await connection.execute(
@@ -226,7 +227,7 @@ class PeriodController {
 
       // Fetch active members
       let memberQuery = `
-      SELECT id, entry_fee_paid, user_id, allow_savings_with_loan, savings_with_loan_amount, stop_loan_interest 
+      SELECT id, entry_fee_paid, user_id, allow_savings_with_loan, savings_with_loan_amount, stop_loan_interest, first_name, last_name
       FROM members 
       WHERE membership_status = 'active'`;
       const queryParams = memberId !== -1 ? [memberId] : [];
@@ -322,15 +323,31 @@ class PeriodController {
             [memberId]
           );
           contri -= entryFee;
+
+          // Notification for entry fee
+          const memberName = `${member.first_name} ${member.last_name}`;
+          await this.insertNotification(
+            connection,
+            member.user_id,
+            "Entry Fee Deducted",
+            `Dear ${memberName}, an entry fee of ₦${entryFee.toLocaleString(
+              "en-NG",
+              { style: "currency", currency: "NGN" }
+            )} has been deducted from your contribution for period ${periodName}.`
+          );
         }
 
         // 2. Process Development Levy
+        const memberName = `${member.first_name} ${member.last_name}`;
         async function processDevelopmentLevy(
           connection,
           memberId,
           periodId,
           contri,
-          fees
+          fees,
+          userId,
+          memberName,
+          periodName
         ) {
           const baseLevy = fees.development_levy || 1000; // Default to ₦1000 if not configured
           const currentLevy = baseLevy;
@@ -364,6 +381,21 @@ class PeriodController {
                 [memberId, periodId, "development_levy", paidAmount]
               );
 
+              // Notification for development levy
+              await connection.execute(
+                `INSERT INTO notifications (user_id, title, body, date) VALUES (?, ?, ?, NOW())`,
+                [
+                  userId,
+                  "Development Levy Deducted",
+                  `Dear ${memberName}, development levy of ₦${paidAmount.toLocaleString(
+                    "en-NG",
+                    { style: "currency", currency: "NGN" }
+                  )} (including ${outstandingMonths} outstanding month${
+                    outstandingMonths > 1 ? "s" : ""
+                  }) has been deducted from your contribution for period ${periodName}.`,
+                ]
+              );
+
               // Insert current period debt with base levy
               await connection.query(
                 `INSERT INTO member_levy_debt (member_id, period_id, outstanding_amount, created_at)
@@ -392,6 +424,19 @@ class PeriodController {
                 `INSERT INTO mastertransact (member_id, period_id, transaction_type, amount)
                 VALUES (?, ?, ?, ?)`,
                 [memberId, periodId, "development_levy", paidAmount]
+              );
+
+              // Notification for partial development levy
+              await connection.execute(
+                `INSERT INTO notifications (user_id, title, body, date) VALUES (?, ?, ?, NOW())`,
+                [
+                  userId,
+                  "Development Levy Deducted (Partial)",
+                  `Dear ${memberName}, development levy of ₦${paidAmount.toLocaleString(
+                    "en-NG",
+                    { style: "currency", currency: "NGN" }
+                  )} has been deducted. You still have outstanding levy balance.`,
+                ]
               );
 
               // Insert current period debt with base levy
@@ -453,7 +498,10 @@ class PeriodController {
           memberId,
           periodId,
           contri,
-          fees
+          fees,
+          member.user_id,
+          memberName,
+          periodName
         );
 
         // 3. Process Stationery Fee
@@ -476,6 +524,17 @@ class PeriodController {
             [memberId, periodId, "stationery_fee", stationeryFee]
           );
           contri -= stationeryFee;
+
+          // Notification for stationery fee
+          await this.insertNotification(
+            connection,
+            member.user_id,
+            "Stationery Fee Deducted",
+            `Dear ${memberName}, a stationery fee of ₦${stationeryFee.toLocaleString(
+              "en-NG",
+              { style: "currency", currency: "NGN" }
+            )} has been deducted from your contribution for period ${periodName} (for loan processing).`
+          );
         }
 
         // 4. Process Commodity Repayment
@@ -537,6 +596,17 @@ class PeriodController {
                 );
               }
               contri -= totalInstallment;
+
+              // Notification for commodity repayment
+              await this.insertNotification(
+                connection,
+                member.user_id,
+                "Commodity Repayment",
+                `Dear ${memberName}, commodity repayment of ₦${totalInstallment.toLocaleString(
+                  "en-NG",
+                  { style: "currency", currency: "NGN" }
+                )} has been deducted from your contribution for period ${periodName}.`
+              );
             } else {
               const ratio =
                 totalInstallment > 0 ? contri / totalInstallment : 0;
@@ -558,18 +628,15 @@ class PeriodController {
             );
           }
         } else if (contri === 0 && cb > 0) {
-          await connection.execute(
-            `INSERT INTO notifications (user_id, title, message, type, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())`,
-            [
-              member.user_id,
-              "Outstanding Commodity Balance",
-              `You have an outstanding commodity balance of ₦${cb.toLocaleString(
-                "en-NG",
-                { style: "currency", currency: "NGN" }
-              )} for period ${periodId}.`,
-              "system",
-              "pending",
-            ]
+          // Notification for outstanding commodity balance
+          await this.insertNotification(
+            connection,
+            member.user_id,
+            "Outstanding Commodity Balance",
+            `Dear ${memberName}, you have an outstanding commodity balance of ₦${cb.toLocaleString(
+              "en-NG",
+              { style: "currency", currency: "NGN" }
+            )} for period ${periodName}. Please make a contribution to clear this balance.`
           );
           await connection.execute(
             `INSERT INTO mastertransact (member_id, period_id, transaction_type, amount) VALUES (?, ?, ?, ?)`,
@@ -608,8 +675,9 @@ class PeriodController {
             `Processing loan repayment for member ${memberId} here is the outstandingLoanBalance: ${outstandingLoanBalance}`
           );
           // Only charge interest if stop_loan_interest is not set
+          let currentInterest = 0;
           if (!stopLoanInterest) {
-            const currentInterest = outstandingLoanBalance * interestRate;
+            currentInterest = outstandingLoanBalance * interestRate;
             await connection.execute(
               `INSERT INTO interest_charged (member_id, period_id, amount, charged_date) VALUES (?, ?, ?, CURDATE())`,
               [memberId, periodId, currentInterest]
@@ -617,6 +685,17 @@ class PeriodController {
             await connection.execute(
               `INSERT INTO mastertransact (member_id, period_id, transaction_type, amount) VALUES (?, ?, ?, ?)`,
               [memberId, periodId, "interest_charged", currentInterest]
+            );
+
+            // Notification for interest charged
+            await this.insertNotification(
+              connection,
+              member.user_id,
+              "Interest Charged",
+              `Dear ${memberName}, interest of ₦${currentInterest.toLocaleString(
+                "en-NG",
+                { style: "currency", currency: "NGN" }
+              )} has been charged on your loan balance for period ${periodName}.`
             );
           } else {
             // Insert zero interest for this period
@@ -670,6 +749,17 @@ class PeriodController {
                 [memberId, periodId, "interest_paid", interestPayment]
               );
               contri -= interestPayment;
+
+              // Notification for interest paid
+              await this.insertNotification(
+                connection,
+                member.user_id,
+                "Interest Paid",
+                `Dear ${memberName}, interest payment of ₦${interestPayment.toLocaleString(
+                  "en-NG",
+                  { style: "currency", currency: "NGN" }
+                )} has been deducted from your contribution for period ${periodName}.`
+              );
             }
             console.log(
               `Savings amount for member ${memberId}: and contri before saving deduction: ${contri}`
@@ -788,6 +878,24 @@ class PeriodController {
                 console.log(
                   `Total repaid for member ${memberId} in period ${periodId}: ${totalRepaid}`
                 );
+
+                // Notification for loan repayment
+                if (totalRepaid > 0) {
+                  await this.insertNotification(
+                    connection,
+                    member.user_id,
+                    "Loan Repayment",
+                    `Dear ${memberName}, loan repayment of ₦${totalRepaid.toLocaleString(
+                      "en-NG",
+                      { style: "currency", currency: "NGN" }
+                    )} has been deducted from your contribution for period ${periodName}. Remaining loan balance: ₦${(
+                      outstandingLoanBalance - totalRepaid
+                    ).toLocaleString("en-NG", {
+                      style: "currency",
+                      currency: "NGN",
+                    })}.`
+                  );
+                }
               }
             }
 
@@ -816,6 +924,17 @@ class PeriodController {
                 );
                 console.log(
                   `Allocated savings=${contri} for member ${memberId}`
+                );
+
+                // Notification for savings allocation (with loan)
+                await this.insertNotification(
+                  connection,
+                  member.user_id,
+                  "Savings Allocated",
+                  `Dear ${memberName}, savings of ₦${contri.toLocaleString(
+                    "en-NG",
+                    { style: "currency", currency: "NGN" }
+                  )} has been allocated to your account for period ${periodName}.`
                 );
                 contri = 0;
               }
@@ -847,20 +966,17 @@ class PeriodController {
                  VALUES (?, ?, ?, ?, ?, ?, CURDATE(), CURDATE(), ?)`,
                 [memberId, 0, periodId, 0, 0, 0, "overdue"]
               );
-              await connection.execute(
-                `INSERT INTO notifications (user_id, title, message, type, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())`,
-                [
-                  member.user_id,
-                  "Missed Loan Repayment",
-                  `You missed a repayment in period ${periodId}. Your outstanding balance is ₦${(
-                    outstandingLoanBalance + outstandingInterest
-                  ).toLocaleString("en-NG", {
-                    style: "currency",
-                    currency: "NGN",
-                  })}.`,
-                  "system",
-                  "pending",
-                ]
+              // Notification for missed loan repayment
+              await this.insertNotification(
+                connection,
+                member.user_id,
+                "Missed Loan Repayment",
+                `Dear ${memberName}, you missed a repayment in period ${periodName}. Your outstanding balance is ₦${(
+                  outstandingLoanBalance + outstandingInterest
+                ).toLocaleString("en-NG", {
+                  style: "currency",
+                  currency: "NGN",
+                })}.`
               );
               await connection.execute(
                 `INSERT INTO mastertransact (member_id, period_id, transaction_type, amount) VALUES (?, ?, ?, ?)`,
@@ -898,6 +1014,20 @@ class PeriodController {
             console.log(
               `Allocated savings=${savingsAmount}, shares=${sharesAmount} for member ${memberId}`
             );
+
+            // Notification for savings/shares allocation (no loan)
+            await this.insertNotification(
+              connection,
+              member.user_id,
+              "Savings & Shares Allocated",
+              `Dear ${memberName}, your contribution for period ${periodName} has been allocated: Savings: ₦${savingsAmount.toLocaleString(
+                "en-NG",
+                { style: "currency", currency: "NGN" }
+              )}, Shares: ₦${sharesAmount.toLocaleString("en-NG", {
+                style: "currency",
+                currency: "NGN",
+              })}.`
+            );
             contri = 0;
           }
         }
@@ -906,6 +1036,14 @@ class PeriodController {
         await connection.execute(
           `UPDATE loans SET status = 'active', start_date = CURDATE() WHERE member_id = ? AND period_id = ? AND status = 'pending'`,
           [memberId, periodId]
+        );
+
+        // Send summary notification
+        await this.insertNotification(
+          connection,
+          member.user_id,
+          `Period ${periodName} Processed`,
+          `Dear ${memberName}, your monthly deductions for period ${periodName} have been processed. Check your statement for details.`
         );
 
         // Mark transaction as completed
@@ -1643,6 +1781,25 @@ class PeriodController {
       ResponseHandler.error(res, error.message || "Failed to update period");
     } finally {
       connection.release();
+    }
+  }
+
+  // Helper function to insert notification
+  async insertNotification(connection, userId, title, body) {
+    if (!userId) {
+      console.warn("Cannot insert notification: userId is missing");
+      return;
+    }
+    try {
+      await connection.execute(
+        `INSERT INTO notifications (user_id, title, body, date) VALUES (?, ?, ?, NOW())`,
+        [userId, title, body]
+      );
+    } catch (error) {
+      console.error(
+        `Failed to insert notification for user ${userId}:`,
+        error.message
+      );
     }
   }
 

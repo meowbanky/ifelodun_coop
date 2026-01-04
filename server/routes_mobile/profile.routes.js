@@ -22,9 +22,14 @@ router.get("/:id", authenticateToken, async (req, res) => {
   const memberId = parseInt(req.params.id, 10);
   const connection = await pool.getConnection();
   try {
-    // Get member info
+    // Get member info with email from users table
     const [memberRows] = await connection.query(
-      "SELECT id, member_id, first_name, last_name, middle_name, phone_number, email, address, date_of_birth, gender, employment_status FROM members WHERE id = ?",
+      `SELECT m.id, m.member_id, m.first_name, m.last_name, m.middle_name, 
+              m.phone_number, u.email, m.address, m.date_of_birth, m.gender, 
+              m.employment_status 
+       FROM members m 
+       INNER JOIN users u ON m.user_id = u.id 
+       WHERE m.id = ?`,
       [memberId]
     );
     if (memberRows.length === 0) {
@@ -89,10 +94,9 @@ router.put("/:id", authenticateToken, async (req, res) => {
       updates.push("phone_number=?");
       values.push(phone_number);
     }
-    if (email !== undefined) {
-      updates.push("email=?");
-      values.push(email);
-    }
+    // Note: Email is now stored in users table only
+    // We'll handle email update separately if needed
+    // (Email updates should go through the users table via user_id)
     if (address !== undefined) {
       updates.push("address=?");
       values.push(address);
@@ -115,6 +119,28 @@ router.put("/:id", authenticateToken, async (req, res) => {
         `UPDATE members SET ${updates.join(", ")} WHERE id = ?`,
         [...values, memberId]
       );
+    }
+
+    // Handle email update separately (email is in users table)
+    if (email !== undefined) {
+      // Get user_id from member
+      const [[member]] = await connection.query(
+        "SELECT user_id FROM members WHERE id = ?",
+        [memberId]
+      );
+      if (member && member.user_id) {
+        // Check for duplicate email
+        const [[existing]] = await connection.query(
+          "SELECT id FROM users WHERE email = ? AND id != ?",
+          [email, member.user_id]
+        );
+        if (!existing) {
+          await connection.query(
+            "UPDATE users SET email = ? WHERE id = ?",
+            [email, member.user_id]
+          );
+        }
+      }
     }
 
     // Update/insert next_of_kin

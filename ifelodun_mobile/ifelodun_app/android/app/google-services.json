@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "52421058425",
+    "project_id": "ifelodun-mobile",
+    "storage_bucket": "ifelodun-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52421058425:android:1e4d6a46d588c7eff1d9a8",
+        "android_client_info": {
+          "package_name": "com.emmaggi.ifeloduncoop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0P0E2UedEOJD9oiDl8jvpjz1GZEqyssU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52421058425:android:de39843f9a938a86f1d9a8",
+        "android_client_info": {
+          "package_name": "com.emmaggi.ifelodun_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0P0E2UedEOJD9oiDl8jvpjz1GZEqyssU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

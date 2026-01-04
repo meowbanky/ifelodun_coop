@@ -45,7 +45,7 @@ class LoanController {
       }
 
       const [periodCheck] = await connection.execute(
-        `SELECT id FROM periods WHERE id = ? AND status = 'open'`,
+        `SELECT id FROM periods WHERE id = ?`,
         [periodId]
       );
       if (periodCheck.length === 0) {

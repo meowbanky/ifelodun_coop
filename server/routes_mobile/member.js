@@ -176,8 +176,11 @@ router.get(
     try {
       const connection = await pool.getConnection();
       const [[profile]] = await connection.query(
-        `SELECT first_name, last_name, email, phone_number, address, membership_date
-       FROM members WHERE id = ?`,
+        `SELECT m.first_name, m.last_name, u.email, m.phone_number, 
+                m.address, m.membership_date
+         FROM members m
+         INNER JOIN users u ON m.user_id = u.id
+         WHERE m.id = ?`,
         [memberId]
       );
       connection.release();
@@ -298,7 +301,7 @@ router.get("/member/:id/profile", authenticateToken, async (req, res) => {
         m.last_name,
         m.middle_name,
         m.phone_number,
-        m.email,
+        u.email,
         m.address,
         m.date_of_birth,
         m.gender,
@@ -314,6 +317,7 @@ router.get("/member/:id/profile", authenticateToken, async (req, res) => {
         nok.phone_number AS nok_phone,
         nok.address AS nok_address
       FROM members m
+      INNER JOIN users u ON m.user_id = u.id
       LEFT JOIN next_of_kin nok ON m.id = nok.member_id
       WHERE m.id = ?
       `,

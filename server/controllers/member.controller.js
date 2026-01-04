@@ -579,10 +579,23 @@ class MemberController {
         phoneNumber,
         employmentStatus,
         nextOfKin,
+        email,
       } = req.body;
 
       await connection.beginTransaction();
 
+      // Get member's user_id to update email if needed
+      const [[member]] = await connection.execute(
+        "SELECT user_id FROM members WHERE id = ?",
+        [req.params.id]
+      );
+
+      if (!member) {
+        await connection.rollback();
+        return ResponseHandler.error(res, "Member not found", 404);
+      }
+
+      // Update member basic info
       await connection.execute(
         `UPDATE members 
                 SET first_name = ?, last_name = ?, address = ?,
@@ -598,6 +611,30 @@ class MemberController {
         ]
       );
 
+      // Update email in users table if provided
+      if (email && member.user_id) {
+        // Check for duplicate email (excluding current user)
+        const [existingEmail] = await connection.execute(
+          "SELECT id FROM users WHERE email = ? AND id != ?",
+          [email, member.user_id]
+        );
+
+        if (existingEmail.length > 0) {
+          await connection.rollback();
+          return ResponseHandler.error(
+            res,
+            "This email is already registered. Please use a different email.",
+            400
+          );
+        }
+
+        await connection.execute("UPDATE users SET email = ? WHERE id = ?", [
+          email,
+          member.user_id,
+        ]);
+      }
+
+      // Update next of kin if provided
       if (nextOfKin) {
         await connection.execute(
           `UPDATE next_of_kin 
@@ -643,8 +680,20 @@ class MemberController {
 
       const searchTerm = `%${query.trim()}%`;
       const [members] = await connection.execute(
-        `SELECT id, member_id, first_name, last_name, email, phone_number, membership_status
-         FROM members 
+        `SELECT
+	members.id, 
+	members.member_id, 
+	members.first_name, 
+	members.last_name, 
+	users.email, 
+	members.phone_number, 
+	members.membership_status
+FROM
+	members
+	INNER JOIN
+	users
+	ON 
+		users.id = members.user_id
          WHERE first_name LIKE ? OR last_name LIKE ? OR member_id LIKE ? OR email LIKE ?
          ORDER BY first_name, last_name
          LIMIT 20`,
