@@ -41,46 +41,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD8xOoneHaGicDY4zIpIK0nMHZwn5b7UjQ',
-    appId: '1:52421058425:web:b200462b6fc3d717f1d9a8',
-    messagingSenderId: '52421058425',
-    projectId: 'ifelodun-mobile',
-    authDomain: 'ifelodun-mobile.firebaseapp.com',
-    storageBucket: 'ifelodun-mobile.firebasestorage.app',
+    apiKey: 'YOUR_WEB_API_KEY',
+    appId: 'YOUR_WEB_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    authDomain: 'YOUR_AUTH_DOMAIN',
+    storageBucket: 'YOUR_STORAGE_BUCKET',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyA0P0E2UedEOJD9oiDl8jvpjz1GZEqyssU',
-    appId: '1:52421058425:android:de39843f9a938a86f1d9a8',
-    messagingSenderId: '52421058425',
-    projectId: 'ifelodun-mobile',
-    storageBucket: 'ifelodun-mobile.firebasestorage.app',
+    apiKey: 'YOUR_ANDROID_API_KEY',
+    appId: 'YOUR_ANDROID_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_STORAGE_BUCKET',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAX64fJoRPyqPfaXoz6kBvcfwu2CzEIcF0',
-    appId: '1:52421058425:ios:d839ff27e02533b6f1d9a8',
-    messagingSenderId: '52421058425',
-    projectId: 'ifelodun-mobile',
-    storageBucket: 'ifelodun-mobile.firebasestorage.app',
-    iosBundleId: 'com.example.ifelodunAppNew',
+    apiKey: 'YOUR_IOS_API_KEY',
+    appId: 'YOUR_IOS_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_STORAGE_BUCKET',
+    iosBundleId: 'YOUR_IOS_BUNDLE_ID',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAX64fJoRPyqPfaXoz6kBvcfwu2CzEIcF0',
-    appId: '1:52421058425:ios:d839ff27e02533b6f1d9a8',
-    messagingSenderId: '52421058425',
-    projectId: 'ifelodun-mobile',
-    storageBucket: 'ifelodun-mobile.firebasestorage.app',
-    iosBundleId: 'com.example.ifelodunAppNew',
+    apiKey: 'YOUR_MACOS_API_KEY',
+    appId: 'YOUR_MACOS_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_STORAGE_BUCKET',
+    iosBundleId: 'YOUR_MACOS_BUNDLE_ID',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyD8xOoneHaGicDY4zIpIK0nMHZwn5b7UjQ',
-    appId: '1:52421058425:web:49b0434c2fbf309ef1d9a8',
-    messagingSenderId: '52421058425',
-    projectId: 'ifelodun-mobile',
-    authDomain: 'ifelodun-mobile.firebaseapp.com',
-    storageBucket: 'ifelodun-mobile.firebasestorage.app',
+    apiKey: 'YOUR_WINDOWS_API_KEY',
+    appId: 'YOUR_WINDOWS_APP_ID',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    authDomain: 'YOUR_AUTH_DOMAIN',
+    storageBucket: 'YOUR_STORAGE_BUCKET',
   );
 }
+

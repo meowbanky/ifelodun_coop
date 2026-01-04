@@ -436,11 +436,28 @@ JWT_SECRET=your-jwt-secret-key
 
 ### Firebase Configuration (Mobile App)
 
-1. Create Firebase project
+**Important**: Firebase configuration files containing API keys are excluded from git for security. You need to set them up locally.
+
+1. Create Firebase project at https://console.firebase.google.com
 2. Add Android/iOS apps to Firebase
-3. Download `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
-4. Place files in respective platform directories
-5. Configure in `lib/firebase_options.dart`
+3. Download configuration files:
+   - Android: Download `google-services.json` from Firebase Console
+   - iOS: Download `GoogleService-Info.plist` from Firebase Console
+   - macOS: Download `GoogleService-Info.plist` from Firebase Console (same as iOS or separate)
+4. Place files in the following locations:
+   ```bash
+   ifelodun_mobile/ifelodun_app/android/app/google-services.json
+   ifelodun_mobile/ifelodun_app/ios/Runner/GoogleService-Info.plist
+   ifelodun_mobile/ifelodun_app/macos/Runner/GoogleService-Info.plist
+   ```
+5. Generate `firebase_options.dart`:
+   ```bash
+   cd ifelodun_mobile/ifelodun_app
+   flutterfire configure
+   ```
+   This will generate `lib/firebase_options.dart` with your Firebase configuration.
+
+**Note**: Example/template files (`.example`) are provided in the repository. Copy them and fill in your Firebase project details if you prefer manual setup.
 
 ## 📡 API Documentation
 
